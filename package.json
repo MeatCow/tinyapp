@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/MeatCow/tinyapp/issues"
   },
-  "homepage": "https://github.com/MeatCow/tinyapp#readme"
+  "homepage": "https://github.com/MeatCow/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.3"
+  }
 }
