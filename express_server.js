@@ -1,13 +1,23 @@
 let express = require('express');
 let app = express();
+const PORT = 8080;
+
+const urlDatabase = {
+  "b2xVn2": "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com"
+};
 
 app.set('view engine', 'ejs');
 
-app.get('/', function(req, res) {
+app.get("/", (req, res) => {
+  res.send("Hello!");
 });
 
-app.get('/about', function(req, res) {
+app.get("/urls", (req, res) => {
+  const templateVars = {urls: urlDatabase};
+  res.render('urls_index.ejs', templateVars);
 });
 
-app.listen(8080);
-console.log('Server is listening on port 8080');
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
+});
