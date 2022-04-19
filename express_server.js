@@ -43,7 +43,10 @@ app.get("*", (req, res) => {
 });
 
 app.post("/urls/new", (req, res) => {
-  const newKey = generateRandomString(6);
+  let newKey;
+  do {
+    newKey = generateRandomString(6);
+  } while (urlDatabase[newKey]);
   let longURL = req.body.longURL;
   if (!longURL.includes("http://")) {
     longURL = "http://" + longURL;
@@ -55,6 +58,13 @@ app.post("/urls/new", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls");
+});
+
+app.post("/urls/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const newURL = req.body.newURL;
+  urlDatabase[shortURL] = newURL;
+  res.redirect(`/urls/${shortURL}`);
 });
 
 app.listen(PORT, () => {
