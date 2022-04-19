@@ -10,10 +10,20 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
-      <form class="form-inline my-2 my-lg-0">
-        <input class="form-control mr-sm-2" type="input" placeholder="Ex. John Smith" aria-label="name">
+      <% if (!username) {%>
+      <form class="form-inline my-2 my-lg-0" method="POST" action="/login">
+        <input class="form-control mr-sm-2" type="input" name="username" placeholder="Ex. John Smith"
+          aria-label="username">
         <button class="btn btn-outline-dark my-2 my-sm-0" aria-label="login button">Login</button>
       </form>
+      <%} else {%>
+      <div class="form-inline">
+        <label class="navbar-item my-2 mr-sm-2" aria-label="name">Logged in As: <%= username %>!</label>
+        <form method="POST" action="/logout">
+          <button class="btn btn-outline-dark my-2 my-sm-0" aria-label="logout button">Logout</button>
+        </form>
+      </div>
+      <%}%>
     </div>
   </nav>
 </header>
