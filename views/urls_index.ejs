@@ -25,10 +25,10 @@
           <% for (const url in urls) { %>
             <tr>
               <td>
-                <%= url %>
+                <a href=/urls/<%=url %>><%=url%></a>
               </td>
               <td>
-                <%= urls[url] %>
+                <a href=<%=urls[url]%>><%=urls[url]%></a>
               </td>
             </tr>
             <% } %>
