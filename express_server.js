@@ -12,10 +12,30 @@ const urlDatabase = {
 };
 
 const usersDatabase = {
-  1: {
-    id: 1,
-    email: "matt.pauze@gmail.com",
-    password: "welcome1"
+  _users:{
+    'Nl6XyH': {
+      id: 'Nl6XyH',
+      email: 'matt.pauze@gmail.com',
+      password: 'welcome1'
+    }
+  },
+  get users() {
+    return this._users;
+  },
+  addUser(email, password) {
+    const newUser = {
+      id: generateRandomString(6, this.users),
+      email,
+      password
+    };
+    this._users[newUser.id] = newUser;
+    return newUser;
+  },
+  findById(id) {
+    return this.users[id];
+  },
+  findByEmail(email) {
+    return Object.values(this.users).find(user => user.email === email);
   }
 };
 
@@ -23,45 +43,55 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+const renderError = (req, res, errMsg, errorCode) => {
+  const user = usersDatabase.findById(req.cookies.userId);
+  console.log("ID:", req.body.id, "User:", user);
+  res.render('user_error', {error: errMsg, user}, (error, html) => {
+    res.status(errorCode).send(html);
+  });
+};
+
 app.get("/u/:shortURL", (req, res) => {
   let longURL = urlDatabase[req.params.shortURL];
   if (!longURL) {
-    return res.status(404).send("Resource does not exists.");
+    return renderError(req, res, "Resource does not exists", 404);
   }
   res.redirect(longURL);
 });
 
 app.get("/urls/new", (req, res) => {
+  const user = usersDatabase.findById(req.cookies.userId);
   const templateVars = {
-    username: req.cookies.username
+    user
   };
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  const user = usersDatabase.findById(req.cookies.userId);
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies.username
+    user
   };
   res.render('urls_show', templateVars);
 });
 
 app.get("/urls", (req, res) => {
+  const user = usersDatabase.findById(req.cookies.userId);
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies.username
+    user
   };
   res.render('urls_index', templateVars);
 });
 
 app.get("/register", (req, res) => {
+  const user = usersDatabase.findById(req.cookies.userId);
   const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies.username
+    user
   };
-  res.render('registration', templateVars);
+  res.render('user_register', templateVars);
 });
 
 app.get("*", (req, res) => {
@@ -69,8 +99,7 @@ app.get("*", (req, res) => {
 });
 
 app.post("/urls/new", (req, res) => {
-  let newKey;
-  newKey = generateRandomString(6, usersDatabase);
+  let newKey = generateRandomString(6, usersDatabase.users);
   
   let longURL = req.body.longURL;
   if (!longURL.includes("http://")) {
@@ -94,12 +123,16 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect('/urls');
+  const user = usersDatabase.findByEmail(req.body.email);
+  if (user) {
+    res.cookie('userId', user.id);
+    return res.redirect('/urls');
+  }
+  return renderError(req, res, "No such user", 404);
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('userId');
   res.redirect('/urls');
 });
 
@@ -107,17 +140,17 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  if (!Object.values(usersDatabase).some(user => user.email === email)) {
-    const newUser = {
-      id: generateRandomString(6, usersDatabase),
-      email,
-      password
-    };
-    usersDatabase[newUser.id] = newUser;
-    return res.status(201).send();
+  if (!email || !password) {
+    return renderError(req, res, "Empty email or password", 400);
+  }
+
+  if (!usersDatabase.findByEmail(email)) {
+    const newUser = usersDatabase.addUser(email, password);
+    res.cookie('userId', newUser.id);
+    return res.redirect('/urls');
   }
   
-  return res.status(409).send();
+  return renderError(req, res, "User already exists", 409);
 });
 
 app.listen(PORT, () => {
