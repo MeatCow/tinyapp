@@ -10,7 +10,7 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
-      <% if (!username) {%>
+      <% if (!locals.username) {%>
       <form class="form-inline my-2 my-lg-0" method="POST" action="/login">
         <input class="form-control mr-sm-2" type="input" name="username" placeholder="Ex. John Smith"
           aria-label="username">
