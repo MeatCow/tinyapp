@@ -9,13 +9,10 @@
       <div class="navbar-nav mr-auto">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-        <a class="nav-item nav-link" href="/register">Register</a>
       </div>
       <% if (!locals.user) {%>
-      <form class="form-inline my-2 my-lg-0" method="POST" action="/login">
-        <input class="form-control mr-sm-2" type="input" name="email" placeholder="Ex. John Smith" aria-label="email">
-        <button class="btn btn-outline-dark my-2 my-sm-0" aria-label="login button">Login</button>
-      </form>
+      <a href="/login" class="btn btn-outline-dark mr-sm-2" aria-label="login button">Login</a>
+      <a href="/register" class="btn btn-outline-dark" aria-label="register button">Register</a>
       <%} else {%>
       <div class="form-inline">
         <label class="navbar-item my-2 mr-sm-2" aria-label="email">Logged in As: <%= locals.user.email %>!</label>
