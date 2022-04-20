@@ -87,11 +87,17 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const user = usersDatabase.findById(req.cookies.userId);
   const templateVars = {
-    user
+    user: usersDatabase.findById(req.cookies.userId)
   };
   res.render('user_register', templateVars);
+});
+
+app.get('/login', (req, res) => {
+  const templateVars = {
+    user: usersDatabase.findById(req.cookies.userId)
+  };
+  res.render('user_login', templateVars);
 });
 
 app.get("*", (req, res) => {
