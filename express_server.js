@@ -11,6 +11,14 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const usersDatabase = {
+  1: {
+    id: 1,
+    email: "matt.pauze@gmail.com",
+    password: "welcome1"
+  }
+};
+
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -47,20 +55,29 @@ app.get("/urls", (req, res) => {
   res.render('urls_index', templateVars);
 });
 
+app.get("/register", (req, res) => {
+  const templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies.username
+  };
+  res.render('registration', templateVars);
+});
+
 app.get("*", (req, res) => {
   res.redirect("/urls/new");
 });
 
 app.post("/urls/new", (req, res) => {
   let newKey;
-  do {
-    newKey = generateRandomString(6);
-  } while (urlDatabase[newKey]);
+  newKey = generateRandomString(6, usersDatabase);
+  
   let longURL = req.body.longURL;
   if (!longURL.includes("http://")) {
     longURL = "http://" + longURL;
   }
   urlDatabase[newKey] = longURL;
+  
   res.redirect(303, `/urls/${newKey}`);
 });
 
@@ -84,6 +101,23 @@ app.post("/login", (req, res) => {
 app.post("/logout", (req, res) => {
   res.clearCookie('username');
   res.redirect('/urls');
+});
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  if (!Object.values(usersDatabase).some(user => user.email === email)) {
+    const newUser = {
+      id: generateRandomString(6, usersDatabase),
+      email,
+      password
+    };
+    usersDatabase[newUser.id] = newUser;
+    return res.status(201).send();
+  }
+  
+  return res.status(409).send();
 });
 
 app.listen(PORT, () => {
