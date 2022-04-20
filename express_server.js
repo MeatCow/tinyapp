@@ -130,11 +130,14 @@ app.post("/urls/:shortURL", (req, res) => {
 
 app.post("/login", (req, res) => {
   const user = usersDatabase.findByEmail(req.body.email);
-  if (user) {
+  const password = req.body.password;
+
+  if (user && user.password === password) {
     res.cookie('userId', user.id);
     return res.redirect('/urls');
   }
-  return renderError(req, res, "No such user", 404);
+
+  return renderError(req, res, "Incorrect username or password", 403);
 });
 
 app.post("/logout", (req, res) => {
