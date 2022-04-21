@@ -27,6 +27,9 @@ const urlDatabase = {
   get urls() {
     return this._urls;
   },
+  removeURL(shortURL) {
+    delete this._urls[shortURL];
+  },
   urlsByUser(user) {
     const results = {};
     if (!user) {
@@ -191,10 +194,14 @@ app.post("/urls/new", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (!isLoggedIn(req) || req.cookie.userId !== urlDatabase.urls[shortURL].userId) {
-    return res.redirect("/urls");
+  const { userId } = req.cookies;
+  const { shortURL } = req.params;
+
+  if (!isLoggedIn(req) || userId !== urlDatabase.urls[shortURL].userId) {
+    return res.status(403).json({ Error: "You do not have permission to access this resource" });
   }
-  delete urlDatabase.urls[req.params.shortURL];
+
+  urlDatabase.removeURL(shortURL);
   res.redirect("/urls");
 });
 
@@ -202,8 +209,9 @@ app.post("/urls/:shortURL", (req, res) => {
   if (!isLoggedIn(req) || req.cookie.userId !== urlDatabase.urls[shortURL].userId) {
     return res.redirect("/urls");
   }
-  const shortURL = req.params.shortURL;
-  const newURL = req.body.newURL;
+
+  const { shortURL } = req.params;
+  const { newURL } = req.body;
   urlDatabase.urls[shortURL].longURL = newURL;
   res.redirect(`/urls/${shortURL}`);
 });
