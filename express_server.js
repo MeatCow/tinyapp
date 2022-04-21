@@ -1,13 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
-const SALT = process.env.SALT;
 const { generateRandomString } = require('./lib/utils');
+const cookieSession = require('cookie-session');
+
+const { SALT, SESSION_SECRET } = process.env;
+const PORT = 8080;
 
 const app = express();
-const PORT = 8080;
 
 const urlDatabase = {
   _urls: {
@@ -26,6 +27,9 @@ const urlDatabase = {
   },
   get urls() {
     return this._urls;
+  },
+  changeURL(shortURL, newURL) {
+    this._urls[shortURL].longURL = newURL;
   },
   removeURL(shortURL) {
     delete this._urls[shortURL];
@@ -79,29 +83,41 @@ const usersDatabase = {
 
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: "userId",
+  secret: SESSION_SECRET
+}));
 
-//TODO: Replace with redirects with error codes. Maybe Ajax?
+//TODO: Replace with redirects with JSON error codes.
 const renderError = (req, res, errMsg, errorCode) => {
-  const user = usersDatabase.findById(req.cookies.userId);
+  const user = usersDatabase.findById(req.session.userId);
   res.render('user_error', { error: errMsg, user }, (error, html) => {
     res.status(errorCode).send(html);
   });
 };
 
+const prefixURL = (url) => {
+  if (!url.includes("http://")) {
+    return "http://" + url;
+  }
+  return url;
+};
+
 const isLoggedIn = (request) => {
-  const id = request.cookies.userId;
+  const id = request.session.userId;
   if (usersDatabase.findById(id)) {
     return true;
   }
   if (id !== undefined) {
-    delete request.cookies.userId;
+    request.session = null;
   }
   return false;
 };
 
 app.get("/u/:shortURL", (req, res) => {
-  let urlObj = urlDatabase.urls[req.params.shortURL];
+  const { shortURL } = req.params;
+  let urlObj = urlDatabase.urls[shortURL];
+
   if (!urlObj) {
     return renderError(req, res, "Resource does not exists", 404);
   }
@@ -112,7 +128,7 @@ app.get("/urls/new", (req, res) => {
   if (!isLoggedIn(req)) {
     return res.redirect("/urls");
   }
-  const user = usersDatabase.findById(req.cookies.userId);
+  const user = usersDatabase.findById(req.session.userId);
   const templateVars = {
     user
   };
@@ -125,7 +141,7 @@ app.get("/urls/:shortURL", (req, res) => {
     return res.redirect("/urls");
   }
 
-  const userId = req.cookies.userId;
+  const userId = req.session.userId;
   const user = usersDatabase.findById(userId);
   if (!urlDatabase.urlsByUser(user)[shortURL]) {
     return renderError(req, res, "You do not have editing rights to this URL", 403);
@@ -140,7 +156,7 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const user = usersDatabase.findById(req.cookies.userId);
+  const user = usersDatabase.findById(req.session.userId);
   const permittedURLs = urlDatabase.urlsByUser(user);
 
   const templateVars = {
@@ -156,7 +172,7 @@ app.get("/register", (req, res) => {
   }
 
   const templateVars = {
-    user: usersDatabase.findById(req.cookies.userId)
+    user: usersDatabase.findById(req.session.userId)
   };
   res.render('user_register', templateVars);
 });
@@ -166,7 +182,7 @@ app.get('/login', (req, res) => {
     return res.redirect("/urls");
   }
   const templateVars = {
-    user: usersDatabase.findById(req.cookies.userId)
+    user: usersDatabase.findById(req.session.userId)
   };
   res.render('user_login', templateVars);
 });
@@ -182,19 +198,18 @@ app.post("/urls/new", (req, res) => {
   let newKey = generateRandomString(6, usersDatabase.users);
 
   let longURL = req.body.longURL;
-  if (!longURL.includes("http://")) {
-    longURL = "http://" + longURL;
-  }
+  longURL = prefixURL(longURL);
+
   urlDatabase.urls[newKey] = {
     longURL,
-    userId: req.cookies.userId
+    userId: req.session.userId
   };
 
   res.redirect(303, `/urls/${newKey}`);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const { userId } = req.cookies;
+  const { userId } = req.session;
   const { shortURL } = req.params;
 
   if (!isLoggedIn(req) || userId !== urlDatabase.urls[shortURL].userId) {
@@ -206,13 +221,16 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  if (!isLoggedIn(req) || req.cookie.userId !== urlDatabase.urls[shortURL].userId) {
+  const { shortURL } = req.params;
+  if (!isLoggedIn(req) || req.session.userId !== urlDatabase.urls[shortURL].userId) {
     return res.redirect("/urls");
   }
 
-  const { shortURL } = req.params;
-  const { newURL } = req.body;
-  urlDatabase.urls[shortURL].longURL = newURL;
+  let { newURL } = req.body;
+  newURL = prefixURL(newURL);
+
+  urlDatabase.changeURL(shortURL, newURL);
+  console.log(urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -230,12 +248,12 @@ app.post("/login", (req, res) => {
     return renderError(req, res, "Incorrect username or password", 403);
   }
 
-  res.cookie('userId', user.id);
+  req.session.userId = user.id;
   return res.redirect('/urls');
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('userId');
+  req.session = null;
   res.redirect('/urls');
 });
 
@@ -254,7 +272,7 @@ app.post("/register", (req, res) => {
   }
 
   const newUser = usersDatabase.addUser(email, password);
-  res.cookie('userId', newUser.id);
+  req.session.userId = newUser.id;
   return res.redirect('/urls');
 });
 
