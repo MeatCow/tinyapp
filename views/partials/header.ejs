@@ -10,17 +10,19 @@
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
-      <% if (!locals.user) {%>
-      <a href="/login" class="btn btn-outline-dark mr-sm-2" aria-label="login button">Login</a>
-      <a href="/register" class="btn btn-outline-dark" aria-label="register button">Register</a>
-      <%} else {%>
-      <div class="form-inline">
-        <label class="navbar-item my-2 mr-sm-2" aria-label="email">Logged in As: <%= locals.user.email %>!</label>
-        <form method="POST" action="/logout">
-          <button class="btn btn-outline-dark my-2 my-sm-0" aria-label="logout button">Logout</button>
-        </form>
+      <div class="navbar-nav">
+        <% if (!locals.user) {%>
+        <a href="/login" class="nav-item nav-link" aria-label="login button">Login</a>
+        <a href="/register" class="nav-item nav-link" aria-label="register button">Register</a>
+        <%} else {%>
+        <div class="form-inline">
+          <label class="navbar-item my-2 mr-sm-2" aria-label="email">Logged in As: <%= locals.user.email %>!</label>
+          <form method="POST" action="/logout">
+            <input type="submit" class="nav-item nav-link btn" value="Logout" />
+          </form>
+        </div>
+        <%}%>
       </div>
-      <%}%>
     </div>
   </nav>
 </header>
