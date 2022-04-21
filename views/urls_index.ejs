@@ -27,7 +27,7 @@
         <% for (const url in locals.urls) { %>
         <tr>
           <td><a href=/urls/<%= url %>><%= url %></a></td>
-          <td><a href=<%= locals.urls[url] %>><%= locals.urls[url] %></a></td>
+          <td><a href=<%= locals.urls[url].longURL %>><%= locals.urls[url].longURL %></a></td>
           <td>
             <a href="/urls/<%= url %>" class="btn btn-outline-primary">Edit</a>
           </td>
