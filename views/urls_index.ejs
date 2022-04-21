@@ -13,7 +13,8 @@
 <body>
   <%- include('partials/header', locals); %>
   <main style="margin: 1em;">
-    <h3>My URLs</h3>
+    <h3 class="text-center">My URLs</h3>
+    <% if (Object.keys(locals.urls).length !== 0) { %>
     <table class="table">
       <thead>
         <tr>
@@ -40,6 +41,9 @@
         <% } %>
       </tbody>
     </table>
+    <% } else { %>
+    <p class="text-center">You currently have no shrunk URLs! Please register, log in, or create some urls</p>
+    <% }%>
   </main>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"

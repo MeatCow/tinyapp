@@ -2,18 +2,41 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const { generateRandomString } = require('./lib/utils');
+const { clearCookie } = require('express/lib/response');
+const req = require('express/lib/request');
 
 const app = express();
 const PORT = 8080;
 
 const urlDatabase = {
-  "b2xVn2": {
-    longURL: "http://www.lighthouselabs.ca",
-    userId: "Nl6XyH"
+  _urls: {
+    "b2xVn2": {
+      longURL: "http://www.lighthouselabs.ca",
+      userId: "Nl6XyH"
+    },
+    "9sm5xK": {
+      longURL: "http://www.google.com",
+      userId: "Nl6XyH"
+    },
+    "jkl234": {
+      longURL: "http://www.youtube.com",
+      userId: "asdf12"
+    }
   },
-  "9sm5xK": {
-    longURL: "http://www.google.com",
-    userId: "Nl6XyH"
+  get urls() {
+    return this._urls;
+  },
+  urlsByUser(user) {
+    const results = {};
+    if (!user) {
+      return results;
+    }
+    for (const [key, object] of Object.entries(this.urls)) {
+      if (object.userId === user.id) {
+        results[key] = object;
+      }
+    }
+    return results;
   }
 };
 
@@ -22,6 +45,11 @@ const usersDatabase = {
     'Nl6XyH': {
       id: 'Nl6XyH',
       email: 'matt.pauze@gmail.com',
+      password: 'welcome1'
+    },
+    'asdf12': {
+      id: 'asdf12',
+      email: 'matthieu.pauze@gmail.com',
       password: 'welcome1'
     }
   },
@@ -59,15 +87,22 @@ const renderError = (req, res, errMsg, errorCode) => {
 };
 
 const isLoggedIn = (request) => {
-  return !!request.cookies.userId;
+  const id = request.cookies.userId;
+  if (usersDatabase.findById(id)) {
+    return true;
+  }
+  if (id !== undefined) {
+    delete request.cookies.userId;
+  }
+  return false;
 };
 
 app.get("/u/:shortURL", (req, res) => {
-  let longURL = urlDatabase[req.params.shortURL].longURL;
-  if (!longURL) {
+  let urlObj = urlDatabase.urls[req.params.shortURL];
+  if (!urlObj) {
     return renderError(req, res, "Resource does not exists", 404);
   }
-  res.redirect(longURL);
+  res.redirect(urlObj.longURL);
 });
 
 app.get("/urls/new", (req, res) => {
@@ -82,10 +117,20 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const user = usersDatabase.findById(req.cookies.userId);
+  const shortURL = req.params.shortURL;
+  if (!urlDatabase.urls[shortURL]) {
+    return res.redirect("/urls");
+  }
+  
+  const userId = req.cookies.userId;
+  const user = usersDatabase.findById(userId);
+  if (!urlDatabase.urlsByUser(user)[shortURL]) {
+    return renderError(req, res, "You do not have editing rights to this URL", 403);
+  }
+
   const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL].longURL,
+    shortURL,
+    longURL: urlDatabase.urls[shortURL].longURL,
     user
   };
   res.render('urls_show', templateVars);
@@ -93,8 +138,10 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const user = usersDatabase.findById(req.cookies.userId);
+  const permittedURLs = urlDatabase.urlsByUser(user);
+
   const templateVars = {
-    urls: urlDatabase,
+    urls: permittedURLs,
     user
   };
   res.render('urls_index', templateVars);
@@ -134,7 +181,7 @@ app.post("/urls/new", (req, res) => {
   if (!longURL.includes("http://")) {
     longURL = "http://" + longURL;
   }
-  urlDatabase[newKey] = {
+  urlDatabase.urls[newKey] = {
     longURL,
     userId: req.cookies.userId
   };
@@ -143,20 +190,20 @@ app.post("/urls/new", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (!isLoggedIn(req)) {
+  if (!isLoggedIn(req) || req.cookie.userId !== urlDatabase.urls[shortURL].userId) {
     return res.redirect("/urls");
   }
-  delete urlDatabase[req.params.shortURL];
+  delete urlDatabase.urls[req.params.shortURL];
   res.redirect("/urls");
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  if (!isLoggedIn(req)) {
+  if (!isLoggedIn(req) || req.cookie.userId !== urlDatabase.urls[shortURL].userId) {
     return res.redirect("/urls");
   }
   const shortURL = req.params.shortURL;
   const newURL = req.body.newURL;
-  urlDatabase[shortURL].longURL = newURL;
+  urlDatabase.urls[shortURL].longURL = newURL;
   res.redirect(`/urls/${shortURL}`);
 });
 
