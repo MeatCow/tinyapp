@@ -1,54 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const { generateRandomString } = require('./lib/utils');
 const cookieSession = require('cookie-session');
-const { UserDatabase } = require('./lib/UserDatabase');
 
+const { generateRandomString } = require('./lib/utils');
+const { UserDatabase } = require('./lib/UserDatabase');
+const { URLDatabase } = require('./lib/URLDatabase');
 const { SESSION_SECRET } = process.env;
+
 const PORT = 8080;
 
 const app = express();
 const usersDatabase = new UserDatabase();
-
-const urlDatabase = {
-  _urls: {
-    "b2xVn2": {
-      longURL: "http://www.lighthouselabs.ca",
-      userId: "Nl6XyH"
-    },
-    "9sm5xK": {
-      longURL: "http://www.google.com",
-      userId: "Nl6XyH"
-    },
-    "jkl234": {
-      longURL: "http://www.youtube.com",
-      userId: "asdf12"
-    }
-  },
-  get urls() {
-    return this._urls;
-  },
-  changeURL(shortURL, newURL) {
-    this._urls[shortURL].longURL = newURL;
-  },
-  removeURL(shortURL) {
-    delete this._urls[shortURL];
-  },
-  urlsByUser(user) {
-    const results = {};
-    if (!user) {
-      return results;
-    }
-    for (const [key, object] of Object.entries(this.urls)) {
-      if (object.userId === user.id) {
-        results[key] = object;
-      }
-    }
-    return results;
-  }
-};
-
+const urlDatabase = new URLDatabase();
 
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -198,7 +162,7 @@ app.post("/urls/:shortURL", (req, res) => {
   let { newURL } = req.body;
   newURL = prefixURL(newURL);
 
-  urlDatabase.changeURL(shortURL, newURL);
+  urlDatabase.updateURL(shortURL, newURL);
   res.redirect(`/urls/${shortURL}`);
 });
 
