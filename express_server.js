@@ -1,14 +1,15 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcryptjs');
 const { generateRandomString } = require('./lib/utils');
 const cookieSession = require('cookie-session');
+const { UserDatabase } = require('./lib/UserDatabase');
 
-const { SALT, SESSION_SECRET } = process.env;
+const { SESSION_SECRET } = process.env;
 const PORT = 8080;
 
 const app = express();
+const usersDatabase = new UserDatabase();
 
 const urlDatabase = {
   _urls: {
@@ -48,38 +49,6 @@ const urlDatabase = {
   }
 };
 
-const usersDatabase = {
-  _users: {
-    'Nl6XyH': {
-      id: 'Nl6XyH',
-      email: 'matt.pauze@gmail.com',
-      password: bcrypt.hashSync(process.env.TEST1_PASSWORD, SALT)
-    },
-    'asdf12': {
-      id: 'asdf12',
-      email: 'matthieu.pauze@gmail.com',
-      password: bcrypt.hashSync(process.env.TEST2_PASSWORD, SALT)
-    }
-  },
-  get users() {
-    return this._users;
-  },
-  addUser(email, password) {
-    const newUser = {
-      id: generateRandomString(6, this.users),
-      email,
-      password: bcrypt.hashSync(password, SALT)
-    };
-    this._users[newUser.id] = newUser;
-    return newUser;
-  },
-  findById(id) {
-    return this.users[id];
-  },
-  findByEmail(email) {
-    return Object.values(this.users).find(user => user.email === email);
-  }
-};
 
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -230,7 +199,6 @@ app.post("/urls/:shortURL", (req, res) => {
   newURL = prefixURL(newURL);
 
   urlDatabase.changeURL(shortURL, newURL);
-  console.log(urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -244,7 +212,7 @@ app.post("/login", (req, res) => {
   if (!user || !password) {
     return renderError(req, res, "Incorrect username or password", 403);
   }
-  if (!bcrypt.compareSync(password, user.password)) {
+  if (!usersDatabase.validPassword(user, password)) {
     return renderError(req, res, "Incorrect username or password", 403);
   }
 
