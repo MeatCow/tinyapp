@@ -1,9 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
+const SALT = process.env.SALT;
 const { generateRandomString } = require('./lib/utils');
-const { clearCookie } = require('express/lib/response');
-const req = require('express/lib/request');
 
 const app = express();
 const PORT = 8080;
@@ -41,16 +42,16 @@ const urlDatabase = {
 };
 
 const usersDatabase = {
-  _users:{
+  _users: {
     'Nl6XyH': {
       id: 'Nl6XyH',
       email: 'matt.pauze@gmail.com',
-      password: 'welcome1'
+      password: bcrypt.hashSync(process.env.TEST1_PASSWORD, SALT)
     },
     'asdf12': {
       id: 'asdf12',
       email: 'matthieu.pauze@gmail.com',
-      password: 'welcome1'
+      password: bcrypt.hashSync(process.env.TEST2_PASSWORD, SALT)
     }
   },
   get users() {
@@ -60,7 +61,7 @@ const usersDatabase = {
     const newUser = {
       id: generateRandomString(6, this.users),
       email,
-      password
+      password: bcrypt.hashSync(password, SALT)
     };
     this._users[newUser.id] = newUser;
     return newUser;
@@ -80,8 +81,7 @@ app.use(cookieParser());
 //TODO: Replace with redirects with error codes. Maybe Ajax?
 const renderError = (req, res, errMsg, errorCode) => {
   const user = usersDatabase.findById(req.cookies.userId);
-  console.log("ID:", req.body.id, "User:", user);
-  res.render('user_error', {error: errMsg, user}, (error, html) => {
+  res.render('user_error', { error: errMsg, user }, (error, html) => {
     res.status(errorCode).send(html);
   });
 };
@@ -121,7 +121,7 @@ app.get("/urls/:shortURL", (req, res) => {
   if (!urlDatabase.urls[shortURL]) {
     return res.redirect("/urls");
   }
-  
+
   const userId = req.cookies.userId;
   const user = usersDatabase.findById(userId);
   if (!urlDatabase.urlsByUser(user)[shortURL]) {
@@ -151,6 +151,7 @@ app.get("/register", (req, res) => {
   if (isLoggedIn(req)) {
     return res.redirect("/urls");
   }
+
   const templateVars = {
     user: usersDatabase.findById(req.cookies.userId)
   };
@@ -176,7 +177,7 @@ app.post("/urls/new", (req, res) => {
     return res.redirect("/urls");
   }
   let newKey = generateRandomString(6, usersDatabase.users);
-  
+
   let longURL = req.body.longURL;
   if (!longURL.includes("http://")) {
     longURL = "http://" + longURL;
@@ -185,7 +186,7 @@ app.post("/urls/new", (req, res) => {
     longURL,
     userId: req.cookies.userId
   };
-  
+
   res.redirect(303, `/urls/${newKey}`);
 });
 
@@ -208,18 +209,21 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+  const user = usersDatabase.findByEmail(email);
+
   if (isLoggedIn(req)) {
     return res.redirect("/urls");
   }
-  const user = usersDatabase.findByEmail(req.body.email);
-  const password = req.body.password;
-
-  if (user && user.password === password) {
-    res.cookie('userId', user.id);
-    return res.redirect('/urls');
+  if (!user || !password) {
+    return renderError(req, res, "Incorrect username or password", 403);
+  }
+  if (!bcrypt.compareSync(password, user.password)) {
+    return renderError(req, res, "Incorrect username or password", 403);
   }
 
-  return renderError(req, res, "Incorrect username or password", 403);
+  res.cookie('userId', user.id);
+  return res.redirect('/urls');
 });
 
 app.post("/logout", (req, res) => {
@@ -228,23 +232,22 @@ app.post("/logout", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
+  const { email, password } = req.body;
+  const user = usersDatabase.findByEmail(email);
+
   if (isLoggedIn(req)) {
     return res.redirect("/urls");
   }
-  const email = req.body.email;
-  const password = req.body.password;
-
   if (!email || !password) {
     return renderError(req, res, "Empty email or password", 400);
   }
-
-  if (!usersDatabase.findByEmail(email)) {
-    const newUser = usersDatabase.addUser(email, password);
-    res.cookie('userId', newUser.id);
-    return res.redirect('/urls');
+  if (user) {
+    return renderError(req, res, "User already exists", 409);
   }
-  
-  return renderError(req, res, "User already exists", 409);
+
+  const newUser = usersDatabase.addUser(email, password);
+  res.cookie('userId', newUser.id);
+  return res.redirect('/urls');
 });
 
 app.listen(PORT, () => {
