@@ -10,9 +10,9 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
-!["Screenshot of URLs page"]()
-!["Screenshot of individual URL page"]()
-!["Screenshot of registration page"]()
+!["Screenshot of URLs page"](https://github.com/MeatCow/tinyapp/blob/main/docs/url-page.png)
+!["Screenshot of individual URL page"](https://github.com/MeatCow/tinyapp/blob/main/docs/url-page.png)
+!["Screenshot of registration page"](https://github.com/MeatCow/tinyapp/blob/main/docs/register-page.png)
 
 ## Dependencies
 
