@@ -21,7 +21,6 @@ app.use(cookieSession({
   secret: SESSION_SECRET
 }));
 
-//TODO: Replace with redirects with JSON error codes.
 const renderError = (req, res, errMsg, errorCode) => {
   const user = usersDatabase.findById(req.session.userId);
   res.render('user_error', { error: errMsg, user }, (error, html) => {
@@ -59,7 +58,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   if (!isLoggedIn(req)) {
-    return res.redirect("/urls");
+    return res.redirect("/login");
   }
   const user = usersDatabase.findById(req.session.userId);
   const templateVars = {
@@ -69,9 +68,13 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  if (!isLoggedIn(req)) {
+    return renderError(req, res, "You are not logged in.", 403);
+  }
+
   const shortURL = req.params.shortURL;
   if (!urlDatabase.urls[shortURL]) {
-    return res.redirect("/urls");
+    return renderError(req, res, "No such URL.", 404);
   }
 
   const userId = req.session.userId;
@@ -121,12 +124,15 @@ app.get('/login', (req, res) => {
 });
 
 app.get("*", (req, res) => {
-  res.redirect("/urls");
+  if (isLoggedIn(req)) {
+    return res.redirect("/urls");
+  }
+  return res.redirect("/login");
 });
 
-app.post("/urls/new", (req, res) => {
+app.post("/urls", (req, res) => {
   if (!isLoggedIn(req)) {
-    return res.redirect("/urls");
+    return renderError(req, res, "You must be logged in to create shortened URLs", 403);
   }
   let newKey = generateRandomString(6, usersDatabase.users);
 
@@ -145,8 +151,12 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   const { userId } = req.session;
   const { shortURL } = req.params;
 
-  if (!isLoggedIn(req) || userId !== urlDatabase.urls[shortURL].userId) {
-    return res.status(403).json({ Error: "You do not have permission to access this resource" });
+  if (!isLoggedIn(req)) {
+    return renderError(req, res, "You are not logged in.", 403);
+  }
+
+  if (userId !== urlDatabase.urls[shortURL].userId) {
+    return renderError(req, res, "You do not own this URL.", 403);
   }
 
   urlDatabase.removeURL(shortURL);
@@ -154,29 +164,29 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/urls/:shortURL", (req, res) => {
+  const { userId } = req.session;
   const { shortURL } = req.params;
-  if (!isLoggedIn(req) || req.session.userId !== urlDatabase.urls[shortURL].userId) {
-    return res.redirect("/urls");
+
+  if (!isLoggedIn(req)) {
+    return renderError(req, res, "You are not logged in.", 403);
+  }
+
+  if (userId !== urlDatabase.urls[shortURL].userId) {
+    return renderError(req, res, "You do not own this URL.", 403);
   }
 
   let { newURL } = req.body;
   newURL = prefixURL(newURL);
 
   urlDatabase.updateURL(shortURL, newURL);
-  res.redirect(`/urls/${shortURL}`);
+  res.redirect('/urls');
 });
 
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   const user = usersDatabase.findByEmail(email);
 
-  if (isLoggedIn(req)) {
-    return res.redirect("/urls");
-  }
-  if (!user || !password) {
-    return renderError(req, res, "Incorrect username or password", 403);
-  }
-  if (!usersDatabase.validPassword(user, password)) {
+  if (!user || !password || !usersDatabase.isValidPassword(user, password)) {
     return renderError(req, res, "Incorrect username or password", 403);
   }
 
@@ -191,14 +201,13 @@ app.post("/logout", (req, res) => {
 
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
-  const user = usersDatabase.findByEmail(email);
 
-  if (isLoggedIn(req)) {
-    return res.redirect("/urls");
-  }
   if (!email || !password) {
     return renderError(req, res, "Empty email or password", 400);
   }
+
+  const user = usersDatabase.findByEmail(email);
+
   if (user) {
     return renderError(req, res, "User already exists", 409);
   }
