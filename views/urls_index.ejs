@@ -13,41 +13,43 @@
 <body>
   <%- include('partials/header', locals); %>
   <main style="margin: 1em;">
-    <h3 class="text-center">My URLs</h3>
-    <% if (Object.keys(locals.urls).length !== 0) { %>
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Short URL</th>
-          <th scope="col">Long URL</th>
-          <th scope="col">Edit</th>
-          <th scope="col">Delete</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% for (const url in locals.urls) { %>
-        <tr>
-          <td>
-            <a href=/urls/<%= url %>><%= url %></a>
-          </td>
-          <td>
-            <a href=<%= locals.urls[url].longURL %>><%= locals.urls[url].longURL %></a>
-          </td>
-          <td>
-            <a href="/urls/<%= url %>" class="btn btn-outline-primary">Edit</a>
-          </td>
-          <td>
-            <form id="deleteform" method="POST" action="/urls/<%= url %>/delete">
-              <button type="submit" form="deleteform" class="btn btn-outline-danger">Delete</button>
-            </form>
-          </td>
-        </tr>
-        <% } %>
-      </tbody>
-    </table>
-    <% } else { %>
-    <p class="text-center">You currently have no shrunk URLs! Please register, log in, or create some urls</p>
-    <% }%>
+    <div class="text-center">
+      <h3 class="text-sm-center">My URLs</h3>
+      <% if (Object.keys(locals.urls).length !== 0) { %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Short URL</th>
+            <th scope="col">Long URL</th>
+            <th scope="col">Edit</th>
+            <th scope="col">Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const url in locals.urls) { %>
+          <tr>
+            <td>
+              <a href=/urls/<%= url %>><%= url %></a>
+            </td>
+            <td>
+              <a href=<%= locals.urls[url].longURL %>><%= locals.urls[url].longURL %></a>
+            </td>
+            <td>
+              <a href="/urls/<%= url %>" class="btn btn-outline-primary">Edit</a>
+            </td>
+            <td>
+              <form id="deleteform" method="POST" action="/urls/<%= url %>/delete">
+                <button type="submit" form="deleteform" class="btn btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+      <% } else { %>
+      <p class="text-center">You currently have no shrunk URLs! Please register, log in, or create some urls</p>
+      <% }%>
+    </div>
   </main>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"

@@ -18,7 +18,7 @@
         <a href="/register" class="nav-item nav-link" aria-label="register button">Register</a>
         <%} else {%>
         <div class="form-inline">
-          <label class="navbar-item mr-sm-2" aria-label="email">Logged in As: <%= locals.user.email %>!</label>
+          <label class="navbar-item mr-sm-2" aria-label="email">Hello, <%= locals.user.email %>!</label>
           <form method="POST" action="/logout">
             <input type="submit" class="nav-item nav-link btn" value="Logout" />
           </form>

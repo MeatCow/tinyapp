@@ -17,14 +17,19 @@
   <%- include('partials/header', locals) %>
 
   <main style="margin: 1em;">
-    <h3>Create TinyURL</h3>
-    <form class="form-inline" action="/urls/new" method="POST">
-      <div class="form-group mb-2">
-        <label for="longURL">Enter a URL:</label>
-        <input class="form-control" type="text" name="longURL" placeholder="http://" style="width: 300px; margin: 1em">
-        <button type="submit" class="btn btn-primary">Submit</button>
+    <div class="row">
+      <div class="mx-auto text-center">
+        <h3>Create TinyURL</h3>
+        <form class="form-inline" action="/urls/new" method="POST">
+          <div class="form-group mb-2">
+            <label for="longURL">Enter a URL:</label>
+            <input class="form-control" type="text" name="longURL" placeholder="http://"
+              style="width: 300px; margin: 1em">
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   </main>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"

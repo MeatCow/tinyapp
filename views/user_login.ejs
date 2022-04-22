@@ -17,21 +17,25 @@
   <%- include('partials/header', locals) %>
 
   <main style="margin: 1em;">
-    <form action="/login" method="POST">
-      <div class="col">
-        <h3>Login</h3>
-        <div class="form-group">
-          <label for="emailInput">Email address</label>
-          <input id="emailInput" class="form-control" type="email" name="email" placeholder="matt@example.com"
-            style="width: 300px;">
+    <div class="d-flex justify-content-center">
+      <form action="/login" method="POST">
+        <div class="flex-column d-flex">
+          <h3 class="mx-auto">Login</h3>
+          <div class="form-group">
+            <label for="emailInput">Email address</label>
+            <input id="emailInput" class="form-control" type="email" name="email" placeholder="matt@example.com"
+              style="width: 300px;">
+          </div>
+          <div class="form-group">
+            <label for="passwordInput">Password</label>
+            <input id="passwordInput" class="form-control" type="password" name="password" style="width: 300px;">
+          </div>
+          <div class="d-flex">
+            <button type="submit" class="btn btn-primary ml-auto">Submit</button>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="passwordInput">Password</label>
-          <input id="passwordInput" class="form-control" type="password" name="password" style="width: 300px;">
-        </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
-      </div>
-    </form>
+      </form>
+    </div>
   </main>
   <!-- Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
