@@ -130,7 +130,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     return renderError(req, res, "You are not logged in.", 403);
   }
 
-  if (user.id !== urlDatabase.urls[shortURL].userId) {
+  if (urlDatabase.ownsURL(user.id, shortURL)) {
     return renderError(req, res, "You do not own this URL.", 403);
   }
 
@@ -147,7 +147,7 @@ app.post("/urls/:shortURL", (req, res) => {
     return renderError(req, res, "You are not logged in.", 403);
   }
 
-  if (user.id !== urlDatabase.urls[shortURL].userId) {
+  if (urlDatabase.ownsURL(user.id, shortURL)) {
     return renderError(req, res, "You do not own this URL.", 403);
   }
 
