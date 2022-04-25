@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 
-const { generateRandomString } = require('./lib/utils');
+const { renderError, generateRandomString, prefixURL } = require('./lib/utils');
 const { UserDatabase } = require('./lib/UserDatabase');
 const { URLDatabase } = require('./lib/URLDatabase');
 const { SESSION_SECRET } = process.env;
@@ -21,19 +21,10 @@ app.use(cookieSession({
   secret: SESSION_SECRET
 }));
 
-const renderError = (req, res, errMsg, errorCode) => {
-  const user = usersDatabase.findById(req.session.userId);
-  res.render('user_error', { error: errMsg, user }, (error, html) => {
-    res.status(errorCode).send(html);
-  });
-};
-
-const prefixURL = (url) => {
-  if (!/^http[s]?:\/\//.test(url)) {
-    return "http://" + url;
-  }
-  return url;
-};
+app.use((req, res, next) => {
+  req.user = usersDatabase.findById(req.session.userId);
+  next();
+});
 
 const isLoggedIn = (request) => {
   const id = request.session.userId;
