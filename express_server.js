@@ -21,21 +21,17 @@ app.use(cookieSession({
   secret: SESSION_SECRET
 }));
 
+/**
+ * Determines if the user is logged in. If so, sets the req.user to the user corresponding to the userId in the session cookie.
+ * If user has an invalid/corrupted session, destroy that session. This most commonly occurs is the session expired or the server was restarted.
+ */
 app.use((req, res, next) => {
   req.user = usersDatabase.findById(req.session.userId);
+  if (!req.user) {
+    req.session = null;
+  }
   next();
 });
-
-const isLoggedIn = (request) => {
-  const id = request.session.userId;
-  if (usersDatabase.findById(id)) {
-    return true;
-  }
-  if (id !== undefined) {
-    request.session = null;
-  }
-  return false;
-};
 
 app.get("/u/:shortURL", (req, res) => {
   const { shortURL } = req.params;
@@ -48,10 +44,12 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  if (!isLoggedIn(req)) {
+  const user = req.user;
+
+  if (!user) {
     return res.redirect("/login");
   }
-  const user = usersDatabase.findById(req.session.userId);
+
   const templateVars = {
     user
   };
@@ -59,7 +57,9 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  if (!isLoggedIn(req)) {
+  const user = req.user;
+
+  if (!user) {
     return renderError(req, res, "You are not logged in.", 403);
   }
 
@@ -68,8 +68,6 @@ app.get("/urls/:shortURL", (req, res) => {
     return renderError(req, res, "No such URL.", 404);
   }
 
-  const userId = req.session.userId;
-  const user = usersDatabase.findById(userId);
   if (!urlDatabase.urlsByUser(user)[shortURL]) {
     return renderError(req, res, "You do not have editing rights to this URL", 403);
   }
@@ -83,7 +81,7 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const user = usersDatabase.findById(req.session.userId);
+  const user = req.user;
   const permittedURLs = urlDatabase.urlsByUser(user);
 
   const templateVars = {
@@ -94,35 +92,39 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  if (isLoggedIn(req)) {
+  const user = req.user;
+  if (user) {
     return res.redirect("/urls");
   }
 
   const templateVars = {
-    user: usersDatabase.findById(req.session.userId)
+    user
   };
   res.render('user_register', templateVars);
 });
 
 app.get('/login', (req, res) => {
-  if (isLoggedIn(req)) {
+  const user = req.user;
+  if (user) {
     return res.redirect("/urls");
   }
+
   const templateVars = {
-    user: usersDatabase.findById(req.session.userId)
+    user
   };
   res.render('user_login', templateVars);
 });
 
 app.get("*", (req, res) => {
-  if (isLoggedIn(req)) {
+  if (req.user) {
     return res.redirect("/urls");
   }
   return res.redirect("/login");
 });
 
 app.post("/urls", (req, res) => {
-  if (!isLoggedIn(req)) {
+  const user = req.user;
+  if (!user) {
     return renderError(req, res, "You must be logged in to create shortened URLs", 403);
   }
   let newKey = generateRandomString(6, usersDatabase.users);
@@ -130,23 +132,24 @@ app.post("/urls", (req, res) => {
   let longURL = req.body.longURL;
   longURL = prefixURL(longURL);
 
+  //TODO: Move to userDatabase as adder method
   urlDatabase.urls[newKey] = {
     longURL,
-    userId: req.session.userId
+    userId: user.id
   };
 
   res.redirect(303, `/urls/${newKey}`);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const { userId } = req.session;
+  const user = req.user;
   const { shortURL } = req.params;
 
-  if (!isLoggedIn(req)) {
+  if (!user) {
     return renderError(req, res, "You are not logged in.", 403);
   }
 
-  if (userId !== urlDatabase.urls[shortURL].userId) {
+  if (user.id !== urlDatabase.urls[shortURL].userId) {
     return renderError(req, res, "You do not own this URL.", 403);
   }
 
@@ -155,14 +158,14 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/urls/:shortURL", (req, res) => {
-  const { userId } = req.session;
+  const user = req.user;
   const { shortURL } = req.params;
 
-  if (!isLoggedIn(req)) {
+  if (!user) {
     return renderError(req, res, "You are not logged in.", 403);
   }
 
-  if (userId !== urlDatabase.urls[shortURL].userId) {
+  if (user.id !== urlDatabase.urls[shortURL].userId) {
     return renderError(req, res, "You do not own this URL.", 403);
   }
 
