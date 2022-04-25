@@ -29,7 +29,7 @@ const renderError = (req, res, errMsg, errorCode) => {
 };
 
 const prefixURL = (url) => {
-  if (!url.includes("http://")) {
+  if (!/^http[s]?:\/\//.test(url)) {
     return "http://" + url;
   }
   return url;
