@@ -23,13 +23,9 @@ app.use(cookieSession({
 
 /**
  * Determines if the user is logged in. If so, sets the req.user to the user corresponding to the userId in the session cookie.
- * If user has an invalid/corrupted session, destroy that session. This most commonly occurs is the session expired or the server was restarted.
  */
 app.use((req, res, next) => {
   req.user = usersDatabase.findById(req.session.userId);
-  if (!req.user) {
-    req.session = null;
-  }
   next();
 });
 
@@ -50,10 +46,7 @@ app.get("/urls/new", (req, res) => {
     return res.redirect("/login");
   }
 
-  const templateVars = {
-    user
-  };
-  res.render("urls_new", templateVars);
+  res.render("urls_new", { user });
 });
 
 app.get("/urls/:shortURL", (req, res) => {
@@ -97,10 +90,7 @@ app.get("/register", (req, res) => {
     return res.redirect("/urls");
   }
 
-  const templateVars = {
-    user
-  };
-  res.render('user_register', templateVars);
+  res.render('user_register', { user });
 });
 
 app.get('/login', (req, res) => {
@@ -109,10 +99,7 @@ app.get('/login', (req, res) => {
     return res.redirect("/urls");
   }
 
-  const templateVars = {
-    user
-  };
-  res.render('user_login', templateVars);
+  res.render('user_login', { user });
 });
 
 app.get("*", (req, res) => {
