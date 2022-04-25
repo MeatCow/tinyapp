@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 
-const { renderError, generateRandomString, prefixURL } = require('./lib/utils');
+const { renderError, prefixURL } = require('./lib/utils');
 const { UserDatabase } = require('./lib/UserDatabase');
 const { URLDatabase } = require('./lib/URLDatabase');
 const { SESSION_SECRET } = process.env;
@@ -111,21 +111,15 @@ app.get("*", (req, res) => {
 
 app.post("/urls", (req, res) => {
   const user = req.user;
+  const { longURL } = req.body;
+
   if (!user) {
     return renderError(req, res, "You must be logged in to create shortened URLs", 403);
   }
-  let newKey = generateRandomString(6, usersDatabase.users);
 
-  let longURL = req.body.longURL;
-  longURL = prefixURL(longURL);
+  const newShortURL = urlDatabase.addURL(prefixURL(longURL), user.id);
 
-  //TODO: Move to userDatabase as adder method
-  urlDatabase.urls[newKey] = {
-    longURL,
-    userId: user.id
-  };
-
-  res.redirect(303, `/urls/${newKey}`);
+  res.redirect(303, `/urls/${newShortURL}`);
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
@@ -147,6 +141,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.post("/urls/:shortURL", (req, res) => {
   const user = req.user;
   const { shortURL } = req.params;
+  const { newURL } = req.body;
 
   if (!user) {
     return renderError(req, res, "You are not logged in.", 403);
@@ -156,10 +151,7 @@ app.post("/urls/:shortURL", (req, res) => {
     return renderError(req, res, "You do not own this URL.", 403);
   }
 
-  let { newURL } = req.body;
-  newURL = prefixURL(newURL);
-
-  urlDatabase.updateURL(shortURL, newURL);
+  urlDatabase.updateURL(shortURL, prefixURL(newURL));
   res.redirect('/urls');
 });
 
