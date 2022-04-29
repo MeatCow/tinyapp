@@ -61,8 +61,8 @@ app.get("/urls/:shortURL", (req, res) => {
     return renderError(req, res, "No such URL.", 404);
   }
 
-  if (!urlDatabase.urlsByUser(user)[shortURL]) {
-    return renderError(req, res, "You do not have editing rights to this URL", 403);
+  if (!urlDatabase.ownsURL(user.id, shortURL)) {
+    return renderError(req, res, "You do not own this URL.", 403);
   }
 
   const templateVars = {
