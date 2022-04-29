@@ -130,7 +130,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     return renderError(req, res, "You are not logged in.", 403);
   }
 
-  if (urlDatabase.ownsURL(user.id, shortURL)) {
+  if (!urlDatabase.ownsURL(user.id, shortURL)) {
     return renderError(req, res, "You do not own this URL.", 403);
   }
 
